@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import ru.tradesolution.salesservice.persistence.entity.Product;
 import ru.tradesolution.salesservice.persistence.mapper.ProductMapper;
 import ru.tradesolution.salesservice.persistence.repository.ProductRepository;
-import ru.tradesolution.salesservice.rest.dto.ProductResponseDto;
+import ru.tradesolution.salesservice.rest.dto.ProductDto;
 import ru.tradesolution.salesservice.rest.exception.ExternalEANServerErrorException;
 import ru.tradesolution.salesservice.rest.exception.ProductProcessingException;
 import ru.tradesolution.salesservice.rest.feign.EANOnline;
@@ -38,21 +38,21 @@ public class ExternalEANAdapter {
                         new ProductProcessingException(String.format(UNKNOWN_ERROR, barcode)));
     }
 
-    private ResponseEntity<ProductResponseDto> checkExternalConnection(ResponseEntity<ProductResponseDto> response) {
+    private ResponseEntity<ProductDto> checkExternalConnection(ResponseEntity<ProductDto> response) {
         if (response.getStatusCode().is5xxServerError()) {
             throw new ExternalEANServerErrorException(CONNECTION_EXTERNAL_ERROR);
         }
         return response;
     }
 
-    private ResponseEntity<ProductResponseDto> isFoundData(ResponseEntity<ProductResponseDto> response) {
+    private ResponseEntity<ProductDto> isFoundData(ResponseEntity<ProductDto> response) {
         if (response.getStatusCode().is4xxClientError()) {
             throw new ProductProcessingException(PRODUCT_NOT_FOUND_ERROR);
         }
         return response;
     }
 
-    private Product getProductFromResponse(ResponseEntity<ProductResponseDto> response) {
+    private Product getProductFromResponse(ResponseEntity<ProductDto> response) {
         return Optional.ofNullable(response.getBody())
                 .map(productMapper::toEntity)
                 .orElseThrow(() -> new ProductProcessingException(PRODUCT_NOT_FOUND_ERROR));

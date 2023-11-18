@@ -1,13 +1,12 @@
 package ru.tradesolution.salesservice.service.store;
 
-import ru.tradesolution.salesservice.rest.dto.ProductManualRequestDto;
 import ru.tradesolution.salesservice.rest.dto.ProductRequestDto;
-import ru.tradesolution.salesservice.rest.dto.ProductResponseDto;
+import ru.tradesolution.salesservice.rest.dto.ProductDto;
 
 public interface ProductService {
 
-    ProductResponseDto addProduct(ProductRequestDto request);
+    ProductDto addProduct(ProductRequestDto request);
 
-    ProductResponseDto addProductByManual(ProductManualRequestDto request);
+    ProductDto addProductByManual(ProductDto request);
 
 }
