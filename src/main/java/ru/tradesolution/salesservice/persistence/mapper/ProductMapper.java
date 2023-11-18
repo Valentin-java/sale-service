@@ -5,7 +5,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import ru.tradesolution.salesservice.persistence.entity.Product;
-import ru.tradesolution.salesservice.rest.dto.ProductResponseDto;
+import ru.tradesolution.salesservice.rest.dto.ProductDto;
 
 import java.time.LocalDateTime;
 
@@ -15,12 +15,12 @@ public interface ProductMapper {
     @Mapping(target ="id", ignore = true)
     @Mapping(target ="createdAt", ignore = true)
     @Mapping(target ="updatedAt", ignore = true)
-    Product toEntity(ProductResponseDto source);
+    Product toEntity(ProductDto source);
 
-    ProductResponseDto toDomain(Product entity);
+    ProductDto toDomain(Product entity);
 
     @AfterMapping
-    default void afterMapping(@MappingTarget Product target, ProductResponseDto source) {
+    default void afterMapping(@MappingTarget Product target, ProductDto source) {
         target.setCreatedAt(LocalDateTime.now());
         target.setUpdatedAt(LocalDateTime.now());
     }

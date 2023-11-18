@@ -11,12 +11,10 @@ import ru.tradesolution.salesservice.persistence.mapper.InventoryItemMapper;
 import ru.tradesolution.salesservice.persistence.mapper.ProductMapper;
 import ru.tradesolution.salesservice.persistence.repository.InventoryItemRepository;
 import ru.tradesolution.salesservice.persistence.repository.ProductRepository;
-import ru.tradesolution.salesservice.rest.dto.ProductManualRequestDto;
+import ru.tradesolution.salesservice.rest.dto.ProductDto;
 import ru.tradesolution.salesservice.rest.dto.ProductRequestDto;
-import ru.tradesolution.salesservice.rest.dto.ProductResponseDto;
 import ru.tradesolution.salesservice.rest.exception.ProductProcessingException;
 import ru.tradesolution.salesservice.service.store.ProductService;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -36,7 +34,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductMapper productMapper = Mappers.getMapper(ProductMapper.class);
 
     @Override
-    public ProductResponseDto addProduct(ProductRequestDto request) {
+    public ProductDto addProduct(ProductRequestDto request) {
         return Optional.ofNullable(request.getBarcode())
                 .flatMap(this::getProductByBarcode)
                 .map(inventoryItemMapper::toEntity)
@@ -54,10 +52,12 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductResponseDto addProductByManual(ProductManualRequestDto request) {
+    public ProductDto addProductByManual(ProductDto request) {
         return Optional.of(request)
                 .map(this::validateProductManualRequest)
                 .map(this::hasAlreadyProduct)
+                .map(productMapper::toEntity)
+                .map(productRepository::save)
                 .map(inventoryItemMapper::toEntity)
                 .map(inventoryItemRepository::save)
                 .map(InventoryItem::getProduct)
@@ -66,14 +66,14 @@ public class ProductServiceImpl implements ProductService {
                         new ProductProcessingException(String.format(INPUT_DATA_ERROR, request.getBarcode())));
     }
 
-    private ProductManualRequestDto hasAlreadyProduct(ProductManualRequestDto request) {
+    private ProductDto hasAlreadyProduct(ProductDto request) {
         if (productRepository.findByBarcode(request.getBarcode()) != null) {
             throw new ProductProcessingException(String.format(PRODUCT_ALREADY_EXIST_ERROR, request.getBarcode()));
         }
         return request;
     }
 
-    private ProductManualRequestDto validateProductManualRequest(ProductManualRequestDto request) {
+    private ProductDto validateProductManualRequest(ProductDto request) {
         List<String> errors = new ArrayList<>();
         if (StringUtils.isBlank(request.getBarcode())) {
             errors.add("Отсутствует штрихкод");
