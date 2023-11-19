@@ -23,6 +23,9 @@ public class InventoryItem {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
+    @Column(name = "store_id", nullable = false)
+    private Long store;
+
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 

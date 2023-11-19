@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.tradesolution.salesservice.rest.dto.ProductDto;
-import ru.tradesolution.salesservice.rest.dto.ProductRequestDto;
 import ru.tradesolution.salesservice.service.store.ProductService;
 
 @RequiredArgsConstructor
@@ -18,7 +17,7 @@ public class ProductController {
     private final ProductService productService;
 
     @PostMapping(path = "/add-product", produces = "application/json", consumes = "application/json")
-    public ResponseEntity<ProductDto> addProduct(@RequestBody ProductRequestDto request) {
+    public ResponseEntity<ProductDto> addProduct(@RequestBody ProductDto request) {
         return ResponseEntity.ok(productService.addProduct(request));
     }
 
@@ -27,6 +26,9 @@ public class ProductController {
         return ResponseEntity.ok(productService.addProductByManual(request));
     }
 
+    // get-list
+
+    // update
 
     // если статус 200
     // возвращаем сущность из БД то есть товар который добавлен на склад магазина,
