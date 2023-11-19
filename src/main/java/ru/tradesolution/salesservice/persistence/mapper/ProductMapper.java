@@ -17,10 +17,11 @@ public interface ProductMapper {
     @Mapping(target ="updatedAt", ignore = true)
     Product toEntity(ProductDto source);
 
-    ProductDto toDomain(Product entity);
+    @Mapping(target ="storeId", ignore = true)
+    ProductDto toDomain(Product source);
 
     @AfterMapping
-    default void afterMapping(@MappingTarget Product target, ProductDto source) {
+    default void afterMapping(@MappingTarget Product target) {
         target.setCreatedAt(LocalDateTime.now());
         target.setUpdatedAt(LocalDateTime.now());
     }

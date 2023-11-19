@@ -12,7 +12,6 @@ import ru.tradesolution.salesservice.persistence.mapper.ProductMapper;
 import ru.tradesolution.salesservice.persistence.repository.InventoryItemRepository;
 import ru.tradesolution.salesservice.persistence.repository.ProductRepository;
 import ru.tradesolution.salesservice.rest.dto.ProductDto;
-import ru.tradesolution.salesservice.rest.dto.ProductRequestDto;
 import ru.tradesolution.salesservice.rest.exception.ProductProcessingException;
 import ru.tradesolution.salesservice.service.store.ProductService;
 import java.util.ArrayList;
@@ -23,8 +22,8 @@ import java.util.Optional;
 @AllArgsConstructor
 public class ProductServiceImpl implements ProductService {
 
-    public static final String INPUT_DATA_ERROR = "Данные либо отсутствует, либо некорректные: %s";
-    public static final String PRODUCT_ALREADY_EXIST_ERROR = "Товар с таким штрихкодом: %s, уже существует, либо удалите его, либо отредактируйте";
+    public static final String INPUT_DATA_ERROR = "Данные некорректные: %s";
+    public static final String PRODUCT_ALREADY_EXIST_ERROR = "Товар с таким штрихкодом: %s, уже существует. Отредактируйте существующий.";
 
     private final ProductRepository productRepository;
     private final InventoryItemRepository inventoryItemRepository;
@@ -34,21 +33,23 @@ public class ProductServiceImpl implements ProductService {
     private final ProductMapper productMapper = Mappers.getMapper(ProductMapper.class);
 
     @Override
-    public ProductDto addProduct(ProductRequestDto request) {
-        return Optional.ofNullable(request.getBarcode())
+    public ProductDto addProduct(ProductDto request) {
+        return Optional.ofNullable(request)
+                .map(this::validateProductManualRequest)
                 .flatMap(this::getProductByBarcode)
-                .map(inventoryItemMapper::toEntity)
+                .map(product -> inventoryItemMapper.toEntity(product, request.getStoreId()))
                 .map(inventoryItemRepository::save)
                 .map(InventoryItem::getProduct)
                 .map(productMapper::toDomain)
                 .orElseThrow(() ->
-                        new ProductProcessingException(String.format(INPUT_DATA_ERROR, request.getBarcode())));
+                        new ProductProcessingException(String.format(INPUT_DATA_ERROR, getNullSafetyBarcode(request))));
     }
 
-    private Optional<Product> getProductByBarcode(String barcode) {
-        var productFromDb = productRepository.findByBarcode(barcode);
+
+    private Optional<Product> getProductByBarcode(ProductDto request) {
+        var productFromDb = productRepository.findByBarcode(request.getBarcode());
         return Optional.ofNullable(productFromDb)
-                .or(() -> Optional.ofNullable(externalEANAdapter.getProductByBarcode(barcode)));
+                .or(() -> Optional.ofNullable(externalEANAdapter.getProductByBarcode(getNullSafetyBarcode(request))));
     }
 
     @Override
@@ -58,23 +59,26 @@ public class ProductServiceImpl implements ProductService {
                 .map(this::hasAlreadyProduct)
                 .map(productMapper::toEntity)
                 .map(productRepository::save)
-                .map(inventoryItemMapper::toEntity)
+                .map(product -> inventoryItemMapper.toEntity(product, request.getStoreId()))
                 .map(inventoryItemRepository::save)
                 .map(InventoryItem::getProduct)
                 .map(productMapper::toDomain)
                 .orElseThrow(() ->
-                        new ProductProcessingException(String.format(INPUT_DATA_ERROR, request.getBarcode())));
+                        new ProductProcessingException(String.format(INPUT_DATA_ERROR, getNullSafetyBarcode(request))));
     }
 
     private ProductDto hasAlreadyProduct(ProductDto request) {
         if (productRepository.findByBarcode(request.getBarcode()) != null) {
-            throw new ProductProcessingException(String.format(PRODUCT_ALREADY_EXIST_ERROR, request.getBarcode()));
+            throw new ProductProcessingException(String.format(PRODUCT_ALREADY_EXIST_ERROR, getNullSafetyBarcode(request)));
         }
         return request;
     }
 
     private ProductDto validateProductManualRequest(ProductDto request) {
         List<String> errors = new ArrayList<>();
+        if (StringUtils.isBlank(request.getStoreId())) {
+            errors.add("Отсутствует id магазина");
+        }
         if (StringUtils.isBlank(request.getBarcode())) {
             errors.add("Отсутствует штрихкод");
         }
@@ -91,5 +95,9 @@ public class ProductServiceImpl implements ProductService {
             throw new ProductProcessingException(StringUtils.join(errors, System.lineSeparator()));
         }
         return request;
+    }
+
+    private static String getNullSafetyBarcode(ProductDto request) {
+        return request != null && request.getBarcode() != null ? request.getBarcode() : "Request or barcode is missing";
     }
 }
